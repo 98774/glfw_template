@@ -1,6 +1,5 @@
 #!/bin/bash
-rm ./build -r
 cmake -S . -B build
-cd build
+cd build || return
 make
 cd ..
