@@ -1,5 +1,6 @@
 #include "shader.hpp"
 #include <GLFW/glfw3.h>
+#include <cmath>
 #include <glad/glad.h>
 
 #include <iostream>
@@ -95,6 +96,13 @@ int main() {
 
     // render the triangle
     ourShader.use();
+
+    // update the uniform offset
+    float timeValue = glfwGetTime();
+    float xOffset = std::sin(timeValue) / 2.0f;
+    int vertexLocation = glGetUniformLocation(ourShader.ID, "offset");
+    glUniform3f(vertexLocation, xOffset, 0.0, -xOffset);
+
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 

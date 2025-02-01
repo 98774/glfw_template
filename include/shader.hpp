@@ -34,7 +34,6 @@ public:
       std::stringstream vShaderStream, fShaderStream;
       // read file's buffer contents into streams
       vShaderStream << vShaderFile.rdbuf();
-      std::cout << "We exist" << vShaderStream.str() << std::endl;
       fShaderStream << fShaderFile.rdbuf();
       // close file handlers
       vShaderFile.close();
