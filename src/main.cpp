@@ -1,5 +1,6 @@
 
 
+#include <cmath>
 #include <glad/glad.h>
 #define GLAD
 #include <GLFW/glfw3.h>
@@ -19,13 +20,13 @@ const char *vertexShaderSource =
     "{\n"
     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
     "}\0";
-const char *fragmentShaderSource =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\n\0";
+const char *fragmentShaderSource = "#version 330 core\n"
+                                   "out vec4 FragColor;\n"
+                                   "uniform vec4 ourColor;\n"
+                                   "void main()\n"
+                                   "{\n"
+                                   "   FragColor = ourColor;\n"
+                                   "}\n\0";
 const char *yellowFragmentShaderSource =
     "#version 330 core\n"
     "out vec4 FragColor;\n"
@@ -137,10 +138,11 @@ int main() {
 
   // set up vertex data (and buffer(s)) and configure vertex attributes
   // ------------------------------------------------------------------
-  float firstTriangle[] = {
-      -0.9f,  -0.5f, 0.0f, // left
-      -0.0f,  -0.5f, 0.0f, // right
-      -0.45f, 0.5f,  0.0f, // top
+  float vertices[] = {
+      // positions         // colors
+      0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
+      -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
+      0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f  // top
   };
   float secondTriangle[] = {
       0.0f,  -0.5f, 0.0f, // left
@@ -156,9 +158,8 @@ int main() {
   // --------------------
   glBindVertexArray(VAOs[0]);
   glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(firstTriangle), firstTriangle,
-               GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 6, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                         (void *)0); // Vertex attributes stay the same
   glEnableVertexAttribArray(0);
   // glBindVertexArray(0); // no need to unbind at all as we directly bind a
@@ -193,7 +194,14 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    // Use shader uniforms
+    float timeValue = glfwGetTime();
+    float greenValue = (std::sin(timeValue) / 2.0f) + 0.5f;
+    float redValue = (std::cos(timeValue) / 4.0f) + 0.5f;
+    float blueValue = (std::cos(timeValue) / 8.0f) + 0.5f;
+    int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
     glUseProgram(shaderProgram);
+    glUniform4f(vertexColorLocation, redValue, greenValue, blueValue, 1.0f);
     // draw first triangle using the data from the first VAO
     glBindVertexArray(VAOs[0]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
