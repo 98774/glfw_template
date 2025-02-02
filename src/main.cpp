@@ -105,9 +105,9 @@ int main() {
   // VBOs) when it's not directly necessary. glBindVertexArray(0);
 
   // Texturing configuration
-  unsigned int texture;
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
+  unsigned int textures[2];
+  glGenTextures(2, textures);
+  glBindTexture(GL_TEXTURE_2D, textures[0]);
   // set the texture wrapping/filtering options (on the currently bound texture
   // object)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -116,6 +116,8 @@ int main() {
                   GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   // load and generate the texture
+  // Images load upsideown because of y directioning
+  stbi_set_flip_vertically_on_load(true);
   int width, height, nrChannels;
   unsigned char *data =
       stbi_load("src/assets/container.jpg", &width, &height, &nrChannels, 0);
@@ -127,6 +129,31 @@ int main() {
     std::cout << "Failed to load texture" << std::endl;
   }
   stbi_image_free(data); // render loop
+
+  // Load a second texture
+  glBindTexture(GL_TEXTURE_2D, textures[1]);
+  // set the texture wrapping/filtering options (on the currently bound texture
+  // object)
+  data =
+      stbi_load("src/assets/awesomeface.png", &width, &height, &nrChannels, 0);
+  if (data) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  }
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, textures[0]);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, textures[1]);
+
+  ourShader
+      .use(); // don't forget to activate the shader before setting uniforms!
+  // These lines do the same thing, either wiht our class or with GL directly
+  glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"),
+              1);                  // set it manually
+  ourShader.setInt("texture2", 0); // or with shader class
+
   // -----------
   while (!glfwWindowShouldClose(window)) {
     // input
@@ -144,10 +171,6 @@ int main() {
     int vertexLocation = glGetUniformLocation(ourShader.ID, "offset");
     glUniform3f(vertexLocation, xOffset, 0.0, -xOffset);
 
-    glBindTexture(GL_TEXTURE_2D, texture);
-    // render the triangle
-    ourShader.use();
-
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved
@@ -161,7 +184,7 @@ int main() {
   // ------------------------------------------------------------------------
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
-
+  glDeleteBuffers(1, &EBO);
   // glfw: terminate, clearing all previously allocated GLFW resources.
   // ------------------------------------------------------------------
   glfwTerminate();
