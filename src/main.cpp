@@ -11,7 +11,8 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
 
 // Stores how much of each texture to mix
-float mixValue = 0.2f;
+float mixValue = 0.2;
+float scaleValue = 1.0;
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -182,7 +183,7 @@ int main() {
     glBindTexture(GL_TEXTURE_2D, textures[1]);
 
     ourShader.setFloat("mixValue", mixValue);
-    std::cout << "Mix Value: " << mixValue << std::endl;
+    ourShader.setFloat("scaleValue", scaleValue);
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved
@@ -209,12 +210,14 @@ int main() {
 void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_CAPS_LOCK) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
-  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+  if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    scaleValue = scaleValue >= 10.0f ? 10.0f : scaleValue + 0.05;
+  if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    scaleValue = scaleValue <= 0.0f ? 0 : scaleValue - 0.05;
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     mixValue = mixValue >= 1.0f ? 1.0f : mixValue + 0.005;
-  }
-  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     mixValue = mixValue <= 0.0f ? 0 : mixValue - 0.005;
-  }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback
