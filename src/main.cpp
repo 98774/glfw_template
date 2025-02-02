@@ -10,6 +10,9 @@
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
 
+// Stores how much of each texture to mix
+float mixValue = 0.2f;
+
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -56,10 +59,10 @@ int main() {
   // ------------------------------------------------------------------
   float vertices[] = {
       // positions          // colors           // texture coords
-      0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-      0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+      0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f, 2.0f, // top right
+      0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f, // bottom right
       -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-      -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f  // top left
+      -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 2.0f  // top left
   }; // Texturing
   //  float texCoords[] = {
   //      0.0f, 0.0f, // lower-left corner
@@ -110,8 +113,8 @@ int main() {
   glBindTexture(GL_TEXTURE_2D, textures[0]);
   // set the texture wrapping/filtering options (on the currently bound texture
   // object)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                   GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -131,8 +134,16 @@ int main() {
   stbi_image_free(data); // render loop
 
   // Load a second texture
+  glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, textures[1]);
   // set the texture wrapping/filtering options (on the currently bound texture
+  //  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
   // object)
   data =
       stbi_load("src/assets/awesomeface.png", &width, &height, &nrChannels, 0);
@@ -141,18 +152,12 @@ int main() {
                  GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
   }
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, textures[0]);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, textures[1]);
-
   ourShader
       .use(); // don't forget to activate the shader before setting uniforms!
   // These lines do the same thing, either wiht our class or with GL directly
   glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"),
-              1);                  // set it manually
-  ourShader.setInt("texture2", 0); // or with shader class
+              0);                  // set it manually
+  ourShader.setInt("texture2", 1); // or with shader class
 
   // -----------
   while (!glfwWindowShouldClose(window)) {
@@ -171,6 +176,13 @@ int main() {
     int vertexLocation = glGetUniformLocation(ourShader.ID, "offset");
     glUniform3f(vertexLocation, xOffset, 0.0, -xOffset);
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textures[0]);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+
+    ourShader.setFloat("mixValue", mixValue);
+    std::cout << "Mix Value: " << mixValue << std::endl;
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved
@@ -197,6 +209,12 @@ int main() {
 void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_CAPS_LOCK) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    mixValue = mixValue >= 1.0f ? 1.0f : mixValue + 0.005;
+  }
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    mixValue = mixValue <= 0.0f ? 0 : mixValue - 0.005;
+  }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback
