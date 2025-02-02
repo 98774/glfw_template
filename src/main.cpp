@@ -1,11 +1,18 @@
+#include "glm/common.hpp"
+#include "glm/ext/matrix_transform.hpp"
 #include "shader.hpp"
 #include <GLFW/glfw3.h>
 #include <cmath>
+#include <cstdlib>
 #include <glad/glad.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <iostream>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -171,12 +178,6 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // update the uniform offset
-    float timeValue = glfwGetTime();
-    float xOffset = std::sin(timeValue) / 2.0f;
-    int vertexLocation = glGetUniformLocation(ourShader.ID, "offset");
-    glUniform3f(vertexLocation, xOffset, 0.0, -xOffset);
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     glActiveTexture(GL_TEXTURE1);
@@ -184,8 +185,31 @@ int main() {
 
     ourShader.setFloat("mixValue", mixValue);
     ourShader.setFloat("scaleValue", scaleValue);
-    glBindVertexArray(VAO);
+
+    // Matrix  transformations
+    glm::mat4 trans = glm::mat4(1.0f);
+    trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+    trans =
+        glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+    unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    // Relocate second object
+    float scale = sin((float)glfwGetTime());
+    trans = scale * glm::mat4(1.0);
+    trans = glm::translate(trans, glm::vec3(-0.5f, -0.5f, 0.0f));
+    trans = glm::scale(trans, glm::vec3(scale, scale, scale));
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    scale = abs(cos((float)glfwGetTime()));
+    trans = scale * glm::mat4(1.0);
+    trans = glm::translate(trans, glm::vec3(0.5f, 0.5f, 0.0f));
+    trans = glm::scale(trans, glm::vec3(scale, scale, scale));
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
     // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved
     // etc.)
     // -------------------------------------------------------------------------------
