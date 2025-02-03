@@ -1,3 +1,4 @@
+#include "camera.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "shader.hpp"
 #include <GLFW/glfw3.h>
@@ -14,15 +15,25 @@
 #include <glm/gtc/type_ptr.hpp>
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
-
-// Stores how much of each texture to mix
-float mixValue = 0.2;
-float scaleValue = 1.0;
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+// Stores how much of each texture to mix
+float mixValue = 0.2;
+float scaleValue = 1.0;
+float deltaTime = 0.0f; // Time between current frame and last frame
+float lastFrame = 0.0f; // Time of last frame
+
+// Camera
+Camera cam = Camera();
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
 
 int main() {
   // glfw: initialize and configure
@@ -47,6 +58,9 @@ int main() {
   }
   glfwMakeContextCurrent(window);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  glfwSetCursorPosCallback(window, mouse_callback);
+  glfwSetScrollCallback(window, scroll_callback);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
   // glad: load all OpenGL function pointers
   // ---------------------------------------
@@ -195,10 +209,15 @@ int main() {
       glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
   // Enable depth using z-buffer
   glEnable(GL_DEPTH_TEST);
+
+  // gives us a vector pionting in the positive x-direction
   while (!glfwWindowShouldClose(window)) {
     // input
     // -----
     processInput(window);
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
 
     // render
     // ------
@@ -231,15 +250,15 @@ int main() {
     }
 
     // create transformations
+    //
+
+    glm::mat4 view =
+        glm::lookAt(cam.Position, cam.Position + cam.Front, cam.Up);
     glm::mat4 model = glm::mat4(
         1.0f); // make sure to initialize matrix to identity matrix first
-    glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 projection = glm::mat4(1.0f);
-    model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f),
-                        glm::vec3(0.5f, 1.0f, 0.0f));
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
     projection = glm::perspective(
-        glm::radians(45.0f) / mixValue,
+        glm::radians(cam.Zoom),
         (float)SCR_WIDTH / (float)SCR_HEIGHT * scaleValue, 0.1f, 100.0f);
     // retrieve the matrix uniform locations
     unsigned int modelLoc = glGetUniformLocation(ourShader.ID, "model");
@@ -291,6 +310,15 @@ void processInput(GLFWwindow *window) {
     mixValue = mixValue >= 1.0f ? 1.0f : mixValue + 0.005;
   if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     mixValue = mixValue <= 0.0f ? 0 : mixValue - 0.005;
+  const float cameraSpeed = 2.5f * deltaTime; // adjust accordingly
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    cam.ProcessKeyboard(FORWARD, deltaTime);
+  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    cam.ProcessKeyboard(BACKWARD, deltaTime);
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    cam.ProcessKeyboard(LEFT, deltaTime);
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    cam.ProcessKeyboard(RIGHT, deltaTime);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback
@@ -300,4 +328,29 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   // make sure the viewport matches the new window dimensions; note that width
   // and height will be significantly larger than specified on retina displays.
   glViewport(0, 0, width, height);
+}
+
+// glfw: whenever the mouse moves, this callback is called
+// -------------------------------------------------------
+void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
+  float xpos = static_cast<float>(xposIn);
+  float ypos = static_cast<float>(yposIn);
+
+  if (firstMouse) {
+    lastX = xpos;
+    lastY = ypos;
+    firstMouse = false;
+  }
+
+  float xoffset = xpos - lastX;
+  float yoffset =
+      lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+  lastX = xpos;
+  lastY = ypos;
+
+  cam.ProcessMouseMovement(xoffset, yoffset);
+}
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
+  cam.ProcessMouseScroll(static_cast<float>(yoffset));
 }
