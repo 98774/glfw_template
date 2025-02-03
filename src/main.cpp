@@ -210,6 +210,8 @@ int main() {
   // Enable depth using z-buffer
   glEnable(GL_DEPTH_TEST);
 
+  // This line allows movement off the xz plane
+  cam.Fpv = false;
   // gives us a vector pionting in the positive x-direction
   while (!glfwWindowShouldClose(window)) {
     // input
@@ -252,8 +254,7 @@ int main() {
     // create transformations
     //
 
-    glm::mat4 view =
-        glm::lookAt(cam.Position, cam.Position + cam.Front, cam.Up);
+    glm::mat4 view = cam.GetViewMatrix();
     glm::mat4 model = glm::mat4(
         1.0f); // make sure to initialize matrix to identity matrix first
     glm::mat4 projection = glm::mat4(1.0f);

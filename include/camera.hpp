@@ -33,17 +33,19 @@ public:
   float MovementSpeed;
   float MouseSensitivity;
   float Zoom;
+  bool Fpv;
 
   // constructor with vectors
   Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
          glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW,
-         float pitch = PITCH)
+         float pitch = PITCH, bool fpv = true)
       : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED),
         MouseSensitivity(SENSITIVITY), Zoom(ZOOM) {
     Position = position;
     WorldUp = up;
     Yaw = yaw;
     Pitch = pitch;
+    Fpv = fpv;
     updateCameraVectors();
   }
   // constructor with scalar values
@@ -60,6 +62,12 @@ public:
 
   // returns the view matrix calculated using Euler Angles and the LookAt Matrix
   glm::mat4 GetViewMatrix() {
+    /* My implementation (is bad)*/
+    //    glm::mat4 view = {Right.x, Right.y, Right.z, 0, Up.x, Up.y, Up.z, 0,
+    //                      Front.x, Front.y, Front.z, 0, 0,    0,    0,    1};
+    //    glm::mat4 translate = {1, 0, 0, Position.x, 0, 1, 0, Position.y,
+    //                           0, 0, 1, Position.z, 0, 0, 0, 1};
+    //    return view * translate;
     return glm::lookAt(Position, Position + Front, Up);
   }
 
@@ -68,14 +76,20 @@ public:
   // systems)
   void ProcessKeyboard(Camera_Movement direction, float deltaTime) {
     float velocity = MovementSpeed * deltaTime;
-    if (direction == FORWARD)
+    if (direction == FORWARD) {
       Position += Front * velocity;
-    if (direction == BACKWARD)
+    }
+    if (direction == BACKWARD) {
       Position -= Front * velocity;
+    }
     if (direction == LEFT)
       Position -= Right * velocity;
     if (direction == RIGHT)
       Position += Right * velocity;
+
+    // Limit movement to the xz plane
+    if (Fpv)
+      Position.y = 0.0f;
   }
 
   // processes input received from a mouse input system. Expects the offset
